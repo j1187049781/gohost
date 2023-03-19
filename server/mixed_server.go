@@ -8,6 +8,8 @@ import (
 	"net"
 	"net/http"
 	"time"
+
+	N "gohost/common/net"
 )
 
 var (
@@ -63,8 +65,8 @@ func Setup(conf *config.Config){
 func handleConnWithProtocol(conn net.Conn){
 	//todo: 判断代理协议
 	
-	reader := bufio.NewReader(conn)
-	head, err := reader.Peek(1)
+	bConn := N.NewReadBufCONN(conn)
+	head, err := bConn.Peek(1)
 	if err != nil {
 		log.Printf("接受代理请求失败：%s", err.Error())
 		return
@@ -72,7 +74,7 @@ func handleConnWithProtocol(conn net.Conn){
 
 	// https ws wss的代理请求：请求方法是CONNECT
 	if head[0] == byte('C') {
-		req, err := http.ReadRequest(reader)
+		req, err := http.ReadRequest(bConn.Reader())
 		if err != nil {
 			log.Printf("接受CONNECT请求失败：%s", err.Error())
 		}
@@ -86,7 +88,7 @@ func handleConnWithProtocol(conn net.Conn){
 	}else{
 		// http 请求
 		// inHttp <- conn
-		req, err:= http.ReadRequest(reader)
+		req, err:= http.ReadRequest(bConn.Reader())
 		fmt.Printf("req: %v\n, %s", req, err.Error())
 	}
 
