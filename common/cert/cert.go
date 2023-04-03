@@ -13,26 +13,38 @@ import (
 	"time"
 )
 
-var (
-	dir  = "cert"
-	host = "go-host"
+const (
+	dir      = "cert"
+	rootHost = "go-host"
 )
 
 // 利用根证书签发子证书
-func SignCert(host string) (*tls.Certificate, error) {
+func SignCert(host string, rootCert *tls.Certificate) (*tls.Certificate, error) {
 
-	// 读取证书
-	cert, err := tls.LoadX509KeyPair(certPath, keyPath)
+	parent, err := x509.ParseCertificate(rootCert.Certificate[0])
 	if err != nil {
 		return nil, err
 	}
-	return &cert, nil
+	parentPrivateKey, err := x509.ParsePKCS1PrivateKey(rootCert.PrivateKey.(*rsa.PrivateKey).D.Bytes())
+	if err != nil {
+		return nil, err
+	}
+
+	privateKey, cert, err := GeneratePemFile(host, parent, parentPrivateKey)
+	if err != nil {
+		return nil, err
+	}
+	ret := &tls.Certificate{
+		Certificate: [][]byte{cert},
+		PrivateKey:  privateKey,
+	}
+	return ret, nil
 }
 
 func LoadRootCert() (*tls.Certificate, error) {
 	// 判断文件是否存在
-	keyPath := path.Join(dir, host+".key")
-	certPath := path.Join(dir, host+".crt")
+	keyPath := path.Join(dir, rootHost+".key")
+	certPath := path.Join(dir, rootHost+".crt")
 	existKey, err := isExist(keyPath)
 	if err != nil {
 		return nil, err
@@ -42,10 +54,20 @@ func LoadRootCert() (*tls.Certificate, error) {
 		return nil, err
 	}
 	if !existKey || !existCert {
-		err = genAndSave(host, true)
+		privateKey, cert, err := GeneratePemFile(rootHost, nil, nil)
 		if err != nil {
 			return nil, err
 		}
+		// 保存
+		err = save("PRIVATE KEY", x509.MarshalPKCS1PrivateKey(privateKey), keyPath)
+		if err != nil {
+			return nil, err
+		}
+		err = save("CERTIFICATE", cert, certPath)
+		if err != nil {
+			return nil, err
+		}
+
 	}
 
 	// 读取证书
@@ -68,42 +90,6 @@ func isExist(filePath string) (bool, error) {
 	return true, nil
 }
 
-// 生成保存证书
-func genAndSave(host string, isCa bool) error {
-	// 生成
-	var parent *x509.Certificate = nil
-	var parentPrivateKey *rsa.PrivateKey = nil
-	if !isCa {
-		// 读取根证书
-		cert, err := LoadRootCert()
-		if err != nil {
-			return err
-		}
-		parent, err = x509.ParseCertificate(cert.Certificate[0])
-		if err != nil {
-			return err
-		}
-		parentPrivateKey, err = x509.ParsePKCS1PrivateKey(cert.PrivateKey.(*rsa.PrivateKey).D.Bytes())
-		if err != nil {
-			return err
-		}
-	}
-	keyPath := path.Join(dir, host+".key")
-	certPath := path.Join(dir, host+".crt")
-	privateKey, cert, err := GeneratePemFile(host, parent, parentPrivateKey)
-	if err != nil {
-		return err
-	}
-	err = save("PRIVATE KEY", x509.MarshalPKCS1PrivateKey(privateKey), keyPath)
-	if err != nil {
-		return err
-	}
-	err = save("CERTIFICATE", cert, certPath)
-	if err != nil {
-		return err
-	}
-	return nil
-}
 
 // 保存文件
 func save(typeInfo string, data []byte, fileName string) (err error) {

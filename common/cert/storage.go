@@ -3,16 +3,12 @@ package cert
 import (
 	"crypto/tls"
 	"log"
-	"path"
-)
-
-const (
-	dir      = "cert"
-	rootHost = "go-host"
+	"sync"
 )
 
 var (
 	cache map[string]*tls.Certificate
+	lock  sync.Mutex
 )
 
 func init() {
@@ -21,38 +17,29 @@ func init() {
 	if err != nil {
 		log.Fatalf("load root cert failed: %v", err)
 	}
-	cache[host] = cert
+	cache[rootHost] = cert
+}
+
+func GetRootCert() *tls.Certificate {
+	lock.Lock()
+	defer lock.Unlock()
+	return cache[rootHost]
 }
 
 func GetSignedCert(host string) (*tls.Certificate, error) {
+	lock.Lock()
+	defer lock.Unlock()
 	cert, ok := cache[host]
 	if ok {
 		return cert, nil
 	}
 
-	// todo: 加锁
-
-	// 判断文件是否存在
-	keyPath := path.Join(dir, host+".key")
-	certPath := path.Join(dir, host+".crt")
-	existKey, err := isExist(keyPath)
-	if err != nil {
-		return nil, err
-	}
-	existCert, err := isExist(certPath)
-	if err != nil {
-		return nil, err
-	}
-	if !existKey || !existCert {
-		err = genAndSave(host, false)
-		if err != nil {
-			return nil, err
-		}
-	}
-	cert, err := SignCert(host)
+	cert, err := SignCert(host, cache[rootHost])
 	if err != nil {
 		return nil, err
 	}
 	cache[host] = cert
 	return cert, nil
 }
+
+
