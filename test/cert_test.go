@@ -8,7 +8,7 @@ import (
 
 func TestGenerateRootPemFile(t *testing.T) {
 	// 生成证书
-	privateKey, x509Cert, err := cert.GenerateRootPemFile()
+	privateKey, x509Cert, err := cert.GeneratePemFile("go-host", nil, nil)
 	if err != nil {
 		t.Error(err)
 		return
