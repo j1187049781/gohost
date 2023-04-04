@@ -6,16 +6,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/pem"
+	"errors"
 	"math/big"
-	"os"
-	"path"
 	"time"
-)
-
-const (
-	dir      = "cert"
-	rootHost = "go-host"
 )
 
 // 利用根证书签发子证书
@@ -25,9 +18,9 @@ func SignCert(host string, rootCert *tls.Certificate) (*tls.Certificate, error) 
 	if err != nil {
 		return nil, err
 	}
-	parentPrivateKey, err := x509.ParsePKCS1PrivateKey(rootCert.PrivateKey.(*rsa.PrivateKey).D.Bytes())
-	if err != nil {
-		return nil, err
+	parentPrivateKey, ok := rootCert.PrivateKey.(*rsa.PrivateKey)
+	if !ok {
+		return nil, errors.New("root cert private key is not rsa")
 	}
 
 	privateKey, cert, err := GeneratePemFile(host, parent, parentPrivateKey)
@@ -39,75 +32,6 @@ func SignCert(host string, rootCert *tls.Certificate) (*tls.Certificate, error) 
 		PrivateKey:  privateKey,
 	}
 	return ret, nil
-}
-
-func LoadRootCert() (*tls.Certificate, error) {
-	// 判断文件是否存在
-	keyPath := path.Join(dir, rootHost+".key")
-	certPath := path.Join(dir, rootHost+".crt")
-	existKey, err := isExist(keyPath)
-	if err != nil {
-		return nil, err
-	}
-	existCert, err := isExist(certPath)
-	if err != nil {
-		return nil, err
-	}
-	if !existKey || !existCert {
-		privateKey, cert, err := GeneratePemFile(rootHost, nil, nil)
-		if err != nil {
-			return nil, err
-		}
-		// 保存
-		err = save("PRIVATE KEY", x509.MarshalPKCS1PrivateKey(privateKey), keyPath)
-		if err != nil {
-			return nil, err
-		}
-		err = save("CERTIFICATE", cert, certPath)
-		if err != nil {
-			return nil, err
-		}
-
-	}
-
-	// 读取证书
-	cert, err := tls.LoadX509KeyPair(certPath, keyPath)
-	if err != nil {
-		return nil, err
-	}
-	return &cert, nil
-}
-
-// 判断文件是否存在
-func isExist(filePath string) (bool, error) {
-	_, err := os.Stat(filePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
-}
-
-
-// 保存文件
-func save(typeInfo string, data []byte, fileName string) (err error) {
-
-	keyFd, err := os.Create(fileName)
-	if err != nil {
-		return
-	}
-	defer keyFd.Close()
-
-	err = pem.Encode(keyFd, &pem.Block{
-		Type:  typeInfo,
-		Bytes: data,
-	})
-	if err != nil {
-		return
-	}
-	return nil
 }
 
 // GeneratePemFile 生成证书,私钥和公钥
