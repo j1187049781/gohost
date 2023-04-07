@@ -45,7 +45,12 @@ func proxy() {
 	for c := range connProxy {
 		p := c
 		go func() {
-			defer p.Conn.Close()
+			defer func(Conn net.Conn) {
+				err := Conn.Close()
+				if err != nil {
+					log.Printf("关闭连接失败: %s", err.Error())
+				}
+			}(p.Conn)
 
 			for {
 				reader := N.NewReader(p.Conn)
