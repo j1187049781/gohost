@@ -6,6 +6,7 @@ import (
 	"gohost/common/cert"
 	N "gohost/common/net"
 	"gohost/config"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -45,52 +46,64 @@ func proxy() {
 	for c := range connProxy {
 		p := c
 		go func() {
-			defer func(Conn net.Conn) {
+			defer func(Conn net.Conn, Host string) {
+				fmt.Printf("关闭代理连接: %s %s\n", Conn.RemoteAddr().String(), Host)
 				err := Conn.Close()
 				if err != nil {
 					log.Printf("关闭连接失败: %s", err.Error())
 				}
-			}(p.Conn)
+			}(p.Conn, p.Host)
 
 			for {
 				reader := N.NewReader(p.Conn)
 				req, err := http.ReadRequest(reader.Reader())
 				if err != nil {
-					fmt.Printf("req: %v\n, %s", req, err.Error())
+					if err == io.EOF {
+						fmt.Printf("read request EOF")
+						return
+					}
+					fmt.Printf("read request error: %s", err.Error())
 					return
 				}
+				log.Printf("处理请求: %s %s %s", req.Method, req.URL, req.Proto)
 
 				// 读取Header中的keepAlive，判断是是否需要keepAlive
 				if p.Protocol == "http" {
-					p.KeepAlive = strings.EqualFold(req.Header.Get("Connection"), "keep-alive")
+					p.KeepAlive = strings.EqualFold(strings.TrimSpace(req.Header.Get("Proxy-Connection")), "keep-alive")
 				}
 
 				// 移除http请求头中的hop-by-hop headers
-				removeHopByHopHeaders(req.Header)
+				// removeHopByHopHeaders(req.Header)
 
 				// reuse existing http.Request
 				req.RequestURI = ""
 				req.URL.Scheme = p.Protocol
 				req.URL.Host = req.Host
 
+				
+
 				resp, err := client.Do(req)
 				if err != nil {
-					fmt.Printf("resp: %v, %s", resp, err)
+					fmt.Printf("远程请求失败%s\n",  err)
+					//todo : return http bad gateway
 					return
 				}
-
-				removeHopByHopHeaders(resp.Header)
+				
+				// removeHopByHopHeaders(resp.Header)
 				if p.KeepAlive {
 					resp.Header.Set("Connection", "keep-alive")
 					resp.Header.Set("Proxy-Connection", "keep-alive")
 					resp.Header.Set("Keep-Alive", "timeout=5, max=1000")
 				}
-				// 不需要resp.Body.Close
-				// The Response Body is closed after it is sent
+				
+				//resp.Close = false 时 请求头中的Connection: close 会被自动移除
+				resp.Close = !p.KeepAlive
+				// 不需要resp.Body.Close()，因为resp.Write()会自动关闭；
 				if err := resp.Write(p.Conn); err != nil {
 					fmt.Printf("resp reply error: %v, %s", resp, err)
 					return
 				}
+				log.Printf("完成处理请求: %s %s %s", req.Method, req.URL, req.Proto)
 				if !p.KeepAlive {
 					return
 				}
@@ -121,7 +134,6 @@ func handleConnWithProtocol(conn net.Conn) {
 			log.Printf("发送接受代理请求失败：%s", err.Error())
 			return
 		}
-		log.Printf("接受https代理请求: %s --> %s", bConn.RemoteAddr().String(), bConn.LocalAddr().String())
 
 		tlsConn := tls.Server(bConn, &tls.Config{
 			GetCertificate: func(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
@@ -133,15 +145,14 @@ func handleConnWithProtocol(conn net.Conn) {
 			fmt.Printf("tls handshake error: %s", err.Error())
 			return
 		}
-		log.Printf("https连接建立成功: %s --> %s", bConn.RemoteAddr().String(), bConn.LocalAddr().String())
 
-		keepAlive := strings.EqualFold(req.Header.Get("Proxy-Connection"), "keep-alive")
-		connProxy <- ConnProxy{tlsConn, "https", keepAlive}
-
+		keepAlive := strings.EqualFold(strings.TrimSpace(req.Header.Get("Proxy-Connection")), "keep-alive")
+		connProxy <- ConnProxy{tlsConn, "https", keepAlive, req.Host}
+		log.Printf("https连接代理建立成功: %s --> %s keepAlive:%v Host:%s", bConn.RemoteAddr().String(), bConn.LocalAddr().String(),keepAlive,req.Host)
 	} else {
 		// http 请求
-		connProxy <- ConnProxy{bConn, "https", true}
-		log.Printf("接受http代理请求: %s --> %s", bConn.RemoteAddr().String(), bConn.LocalAddr().String())
+		connProxy <- ConnProxy{bConn, "https", true, ""}
+		log.Printf("http连接代理建立成功: %s --> %s ", bConn.RemoteAddr().String(), bConn.LocalAddr().String())
 	}
 
 }

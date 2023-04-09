@@ -6,4 +6,5 @@ type ConnProxy struct {
 	Conn      net.Conn
 	Protocol  string
 	KeepAlive bool
+	Host string
 }
