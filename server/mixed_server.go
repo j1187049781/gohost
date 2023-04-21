@@ -40,7 +40,10 @@ func Setup(conf *config.Config) {
 }
 
 func proxy() {
-	client := &http.Client{}
+	config := tls.Config{
+		NextProtos: []string{"http/1.1"},
+	}
+	client := &http.Client{Transport:&http.Transport{TLSClientConfig: &config}}
 
 	for c := range connProxy {
 		p := c
@@ -73,6 +76,7 @@ func proxy() {
 				req.URL.Scheme = p.Protocol
 				req.URL.Host = req.Host
 
+				req,err = http.NewRequest("GET", "https://csdnimg.cn/public/sandalstrap/1.4/css/sandalstrap.min.css",nil)
 				resp, err := client.Do(req)
 				if err != nil {
 					fmt.Printf("resp: %v, %s", resp, err)
@@ -127,6 +131,7 @@ func handleConnWithProtocol(conn net.Conn) {
 			GetCertificate: func(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
 				return cert.GetSignedCert(info.ServerName)
 			},
+			NextProtos: []string{"http/1.1"},
 		})
 		err = tlsConn.Handshake()
 		if err != nil {
