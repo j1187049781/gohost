@@ -76,7 +76,7 @@ func proxy() {
 				}
 
 				// 移除http请求头中的hop-by-hop headers
-				// removeHopByHopHeaders(req.Header)
+				removeHopByHopHeaders(req.Header)
 
 				// reuse existing http.Request
 				req.RequestURI = ""
@@ -90,7 +90,7 @@ func proxy() {
 					return
 				}
 				
-				// removeHopByHopHeaders(resp.Header)
+				removeHopByHopHeaders(resp.Header)
 				if p.KeepAlive {
 					resp.Header.Set("Connection", "keep-alive")
 					resp.Header.Set("Proxy-Connection", "keep-alive")
