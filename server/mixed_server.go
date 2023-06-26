@@ -6,6 +6,7 @@ import (
 	"gohost/common/cert"
 	N "gohost/common/net"
 	"gohost/config"
+	"gohost/handler"
 	"io"
 	"log"
 	"net"
@@ -82,6 +83,8 @@ func proxy() {
 				req.RequestURI = ""
 				req.URL.Scheme = p.Protocol
 				req.URL.Host = req.Host
+				
+				handler.HandleRequest(req)
 
 				resp, err := client.Do(req)
 				if err != nil {
@@ -153,7 +156,7 @@ func handleConnWithProtocol(conn net.Conn) {
 		log.Printf("https连接代理建立成功: %s --> %s keepAlive:%v Host:%s", bConn.RemoteAddr().String(), bConn.LocalAddr().String(),keepAlive,req.Host)
 	} else {
 		// http 请求
-		connProxy <- ConnProxy{bConn, "https", true, ""}
+		connProxy <- ConnProxy{bConn, "http", true, ""}
 		log.Printf("http连接代理建立成功: %s --> %s ", bConn.RemoteAddr().String(), bConn.LocalAddr().String())
 	}
 
