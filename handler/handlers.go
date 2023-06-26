@@ -14,7 +14,7 @@ func init() {
 	RequestHandlers = make([]req.RequestHandler, 0)
 
 	// add your handler here
-	RequestHandlers = append(RequestHandlers, req.NewUrlHandler("//test-galaxy.hzins.com/api/rde","//127.0.0.1:8080/api/rde"))
+	RequestHandlers = append(RequestHandlers, req.NewUrlHandler("//www.baidu.com","//127.0.0.1:8080/api/rde"))
 }
 
 func HandleRequest(req *http.Request) {
