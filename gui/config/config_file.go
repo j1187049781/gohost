@@ -12,7 +12,7 @@ type Config struct {
 	UrlHandlerConfig UrlHandlerConfig `yaml:"url_handler"`
 }
 
-var GlobalConfig Config
+var GlobalConfig Config = initDefaultConfig()
 var lock = &sync.Mutex{}
 var path = "conf/config.yaml"
 
