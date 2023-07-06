@@ -1,6 +1,8 @@
 package main
 
 import (
+	ruleEntry "gohost/gui/component/rule-entry"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
@@ -11,9 +13,11 @@ func main() {
 	appInstant := app.New()
 	window := appInstant.NewWindow("gohost")
 
+	ruleEntry := ruleEntry.MakeRuleEntry()
+	certLable := widget.NewLabel("cert")
 	tabs := container.NewAppTabs(
-		container.NewTabItem("rule", widget.NewLabel("Hello")),
-		container.NewTabItem("cert", widget.NewLabel("cert")),
+		container.NewTabItem("rule", ruleEntry),
+		container.NewTabItem("cert", certLable),
 	)
 	tabs.SetTabLocation(container.TabLocationLeading)
 
