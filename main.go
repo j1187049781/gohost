@@ -6,6 +6,6 @@ import (
 )
 
 func main() {
-	conf := config.InitDefaultConfig()
+	conf := config.InitConfig()
 	server.Setup(&conf)
 }

@@ -21,11 +21,13 @@ func NewUrlHandler(pattern, target string) *UrlHandler {
 	pUrl, err := url.Parse(pattern)
 	if err != nil {
 		log.Printf("parse pattern url error: %v", err)
+		return nil
 	}
 
 	tUrl, err := url.Parse(target)
 	if err != nil {
 		log.Printf("parse target url error: %v", err)
+		return nil
 	}
 
 	return &UrlHandler{

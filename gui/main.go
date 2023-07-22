@@ -1,7 +1,9 @@
 package main
 
 import (
+	"gohost/config"
 	ruleEntry "gohost/gui/component/rule-entry"
+	"gohost/server"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -10,10 +12,14 @@ import (
 )
 
 func main() {
+	conf := config.InitConfig()
+	server.Setup(&conf)
+
+	
 	appInstant := app.New()
 	window := appInstant.NewWindow("gohost")
 
-	ruleEntry := ruleEntry.MakeRuleEntry()
+	ruleEntry := ruleEntry.MakeRuleEntry(&conf)
 	certLable := widget.NewLabel("cert")
 	tabs := container.NewAppTabs(
 		container.NewTabItem("rule", ruleEntry),
