@@ -11,9 +11,11 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+
 func main() {
 	conf := config.InitConfig()
-	server.Setup(&conf)
+	s := server.NewMixedServer(&conf)
+	s.Setup()
 
 	
 	appInstant := app.New()

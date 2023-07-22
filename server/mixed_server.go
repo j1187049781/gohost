@@ -14,15 +14,25 @@ import (
 	"strings"
 )
 
-var (
+type MixedServer struct{
+	conf *config.Config
+	Handlers handler.Handlers
 	connProxy chan ConnProxy
-)
-
-func init() {
-	connProxy = make(chan ConnProxy, 2000)
 }
 
-func Setup(conf *config.Config) {
+
+func NewMixedServer(conf *config.Config) *MixedServer{
+	s := MixedServer{
+		conf: conf,
+		Handlers: handler.Handlers{},
+		connProxy: make(chan ConnProxy, 2000),
+	}
+	s.Handlers.LoadFromConfig(conf)
+	return &s
+}
+
+func (s *MixedServer) Setup() {
+	conf := s.conf
 	addrPort := fmt.Sprintf("%s:%d", conf.ServerConfig.ListenAddr, conf.ServerConfig.ListenPort)
 	ln, err := net.Listen(conf.ServerConfig.Network, addrPort)
 	if err != nil {
@@ -31,23 +41,23 @@ func Setup(conf *config.Config) {
 	}
 	log.Printf("服务启动成功： %s", addrPort)
 
-	go proxy()
+	go s.proxy()
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
 			log.Printf("接受请求失败: %s", err.Error())
 		}
-		go handleConnWithProtocol(conn)
+		go s.handleConnWithProtocol(conn)
 	}
 }
 
-func proxy() {
+func (s *MixedServer) proxy() {
 	config := tls.Config{
 		NextProtos: []string{"http/1.1"},
 	}
 	client := &http.Client{Transport:&http.Transport{TLSClientConfig: &config}}
 
-	for c := range connProxy {
+	for c := range s.connProxy {
 		p := c
 		go func() {
 			defer func(Conn net.Conn, Host string) {
@@ -84,7 +94,7 @@ func proxy() {
 				req.URL.Scheme = p.Protocol
 				req.URL.Host = req.Host
 				
-				handler.HandleRequest(req)
+				s.Handlers.HandleRequest(req)
 
 				resp, err := client.Do(req)
 				if err != nil {
@@ -116,7 +126,7 @@ func proxy() {
 	}
 }
 
-func handleConnWithProtocol(conn net.Conn) {
+func  (s *MixedServer) handleConnWithProtocol(conn net.Conn) {
 	//todo: 判断代理协议,目前支持Http
 
 	bConn := N.NewReader(conn)
@@ -152,11 +162,11 @@ func handleConnWithProtocol(conn net.Conn) {
 		}
 
 		keepAlive := strings.EqualFold(strings.TrimSpace(req.Header.Get("Proxy-Connection")), "keep-alive")
-		connProxy <- ConnProxy{tlsConn, "https", keepAlive, req.Host}
+		s.connProxy <- ConnProxy{tlsConn, "https", keepAlive, req.Host}
 		log.Printf("https连接代理建立成功: %s --> %s keepAlive:%v Host:%s", bConn.RemoteAddr().String(), bConn.LocalAddr().String(),keepAlive,req.Host)
 	} else {
 		// http 请求
-		connProxy <- ConnProxy{bConn, "http", true, ""}
+		s.connProxy <- ConnProxy{bConn, "http", true, ""}
 		log.Printf("http连接代理建立成功: %s --> %s ", bConn.RemoteAddr().String(), bConn.LocalAddr().String())
 	}
 

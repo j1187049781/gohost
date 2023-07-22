@@ -1,6 +1,9 @@
 package server
 
-import "net"
+import (
+	"net"
+)
+
 
 type ConnProxy struct {
 	Conn      net.Conn

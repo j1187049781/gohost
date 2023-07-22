@@ -7,5 +7,6 @@ import (
 
 func main() {
 	conf := config.InitConfig()
-	server.Setup(&conf)
+	s := server.NewMixedServer(&conf)
+	s.Setup()
 }

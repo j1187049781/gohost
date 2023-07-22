@@ -2,6 +2,7 @@ package rule_entry
 
 import (
 	"gohost/config"
+	"gohost/gui/tasks"
 	"log"
 	"strings"
 	"time"
@@ -13,7 +14,18 @@ import (
 func MakeRuleEntry(conf *config.Config) fyne.CanvasObject {
 	ruleEntry := widget.NewMultiLineEntry()
 	refreshRuleEntry(ruleEntry, conf)
-	go saveRuleEntry(ruleEntry,conf)
+
+	task := tasks.AutoSaveTask{
+		NeedSave: make(chan struct{}),
+		TaskFunc: func() {
+			saveRuleEntry(ruleEntry,conf)
+		},
+	}
+	ruleEntry.OnChanged = func(s string) {
+		task.NeedSave <- struct{}{}
+	}
+	task.RunBgTask()
+		
 	return ruleEntry
 }
 
