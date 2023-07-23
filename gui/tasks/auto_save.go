@@ -1,6 +1,8 @@
 package tasks
 
-import "time"
+import (
+	// "time"
+)
 
 type AutoSaveTask struct{
 	NeedSave chan struct{}
@@ -14,7 +16,6 @@ func (t *AutoSaveTask) RunBgTask(){
 			if t.TaskFunc != nil{
 				t.TaskFunc()
 			}
-			time.Sleep(time.Second * 3)
 		}
 	}()
 }

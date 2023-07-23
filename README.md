@@ -1,4 +1,8 @@
 # gohost
+```bash
+sudo cp go-host.crt /usr/local/share/ca-certificates/
+sudo update-ca-certificate
+```
 
 ```bash
 sudo apt install build-essential libx11-dev xorg-dev

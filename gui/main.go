@@ -15,7 +15,7 @@ import (
 func main() {
 	conf := config.InitConfig()
 	s := server.NewMixedServer(&conf)
-	s.Setup()
+	go s.Setup()
 
 	
 	appInstant := app.New()

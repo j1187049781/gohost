@@ -5,8 +5,6 @@ import (
 	"gohost/gui/tasks"
 	"log"
 	"strings"
-	"time"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
 )
@@ -22,10 +20,13 @@ func MakeRuleEntry(conf *config.Config) fyne.CanvasObject {
 		},
 	}
 	ruleEntry.OnChanged = func(s string) {
-		task.NeedSave <- struct{}{}
+		if task.NeedSave != nil && len(task.NeedSave) < 1{
+			task.NeedSave <- struct{}{}
+		}
+		
 	}
 	task.RunBgTask()
-		
+
 	return ruleEntry
 }
 
@@ -37,19 +38,15 @@ func refreshRuleEntry(ruleEntry *widget.Entry, conf *config.Config) {
 }
 
 func saveRuleEntry(ruleEntry *widget.Entry, conf *config.Config) {
-	ticker := time.NewTicker(3 * time.Second)
-	defer ticker.Stop()
 	
-	for c := range ticker.C {
-		mappings, err := sparseLines(ruleEntry.Text)
-		if err != nil {
-			log.Printf(" save rule err: [%v], time: %v", err.Error(), c)
-			continue
-		}
-
-		conf.SetMapping(mappings)
-		conf.SaveConfig()
+	mappings, err := sparseLines(ruleEntry.Text)
+	if err != nil {
+		log.Printf(" save rule err: [%v]", err.Error())
+		return
 	}
+
+	conf.SetMapping(mappings)
+	conf.SaveConfig()
 }
 
 func sparseLines(text string) ([]config.UrlMapping , error){

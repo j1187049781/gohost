@@ -11,7 +11,7 @@ import (
 
 type Config struct {
 	ServerConfig *ServerConfig `yaml:"server_config"`
-	mappings     []UrlMapping  `yaml:"mappings"`
+	Mappings     []UrlMapping  `yaml:"mappings"`
 	lock         sync.RWMutex  `yaml:"-"`
 }
 
@@ -42,11 +42,11 @@ func InitConfig(options ...Option) (conf Config) {
 func (c *Config) SetMapping(m []UrlMapping){
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	c.mappings = m
+	c.Mappings = m
 }
 
 func (c *Config) GetMapping() ([]UrlMapping){
-	return c.mappings
+	return c.Mappings
 }
 
 func (c *Config) loadConfig() {
