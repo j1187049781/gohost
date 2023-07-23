@@ -54,6 +54,7 @@ func (s *MixedServer) Setup() {
 func (s *MixedServer) proxy() {
 	config := tls.Config{
 		NextProtos: []string{"http/1.1"},
+		InsecureSkipVerify: true,
 	}
 	client := &http.Client{Transport:&http.Transport{TLSClientConfig: &config}}
 
