@@ -56,7 +56,13 @@ func (s *MixedServer) proxy() {
 		NextProtos: []string{"http/1.1"},
 		InsecureSkipVerify: true,
 	}
-	client := &http.Client{Transport:&http.Transport{TLSClientConfig: &config}}
+	client := &http.Client{
+		Transport:&http.Transport{TLSClientConfig: &config},
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			fmt.Printf("重定向: %s %s %s\n", req.Method, req.Host, req.URL)
+			return http.ErrUseLastResponse
+		},
+	}
 
 	for c := range s.connProxy {
 		p := c
