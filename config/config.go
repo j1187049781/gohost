@@ -12,6 +12,7 @@ import (
 type Config struct {
 	ServerConfig *ServerConfig `yaml:"server_config"`
 	Mappings     []UrlMapping  `yaml:"mappings"`
+	RequestCopyFileUrls []string `yaml:"request_copy_file_urls"`
 	lock         sync.RWMutex  `yaml:"-"`
 }
 
