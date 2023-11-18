@@ -25,6 +25,13 @@ func (h *Handlers) LoadFromConfig(conf *config.Config) {
 			h.requestHandlers = append(h.requestHandlers, pair)
 		}
 	}
+
+	for _, fm := range conf.RequestCopyFileUrls {
+		pair := req.NewReqCopyFileHandler(fm.Pattern, fm.FormFileKeys)
+		if pair != nil {
+			h.requestHandlers = append(h.requestHandlers, pair)
+		}
+	}
 }
 
 func (h *Handlers) HandleRequest(req *http.Request) {

@@ -1,13 +1,15 @@
 package handler
 
 import (
+	"bytes"
+	"crypto/md5"
+	"encoding/hex"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
-	"github.com/google/uuid"
 )
 
 /**
@@ -42,10 +44,6 @@ func (h *ReqCopyFileHandler) Match(req *http.Request) bool {
 
 	if req.URL == nil {
 		log.Printf("request url is nil")
-		return false
-	}
-
-	if req.URL.Host != h.patternUrl.Host {
 		return false
 	}
 
@@ -92,12 +90,14 @@ func (h *ReqCopyFileHandler) saveFile(req *http.Request) {
 	}
 
 	for _, key := range h.FormFileKeys {
-		file, _, err := req.FormFile(key)
+		file, fileHeader, err := req.FormFile(key)
 		if err != nil {
 			log.Printf("get form file error: %v", err)
 			return
 		}
 		defer file.Close()
+		// get the file name
+		fileName := fileHeader.Filename
 
 		fileBytes, err := io.ReadAll(file)
 		if err != nil {
@@ -105,7 +105,9 @@ func (h *ReqCopyFileHandler) saveFile(req *http.Request) {
 			return
 		}
 
-		writeFile(uuid.New().String()+key, fileBytes)
+		md5 := md5.Sum(fileBytes)
+		fileName = hex.EncodeToString(md5[:]) + "_" + fileName
+		writeFile(fileName, fileBytes)
 	}
 }
 

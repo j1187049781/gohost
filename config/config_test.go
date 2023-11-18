@@ -7,7 +7,9 @@ import (
 
 func TestSave(t *testing.T) {
 	conf := config.InitConfig()
-	mappings := []config.UrlMapping {{Pattern: "//www.baidu.com", Target: "//14.119.104.254"}}
-	conf.SetMapping(mappings)
+	conf.RequestCopyFileUrls = append(conf.RequestCopyFileUrls, config.FormFileMapping{
+		Pattern: "/user/firconfig",
+		FormFileKeys: []string{"file"},
+	})
 	conf.SaveConfig()
 }

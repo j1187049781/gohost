@@ -4,7 +4,6 @@ go 1.19
 
 require (
 	fyne.io/fyne/v2 v2.3.5
-	github.com/google/uuid v1.1.2
 	gopkg.in/yaml.v3 v3.0.1
 )
 

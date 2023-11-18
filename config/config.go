@@ -12,7 +12,7 @@ import (
 type Config struct {
 	ServerConfig *ServerConfig `yaml:"server_config"`
 	Mappings     []UrlMapping  `yaml:"mappings"`
-	RequestCopyFileUrls []string `yaml:"request_copy_file_urls"`
+	RequestCopyFileUrls []FormFileMapping `yaml:"request_copy_file_urls"`
 	lock         sync.RWMutex  `yaml:"-"`
 }
 
@@ -86,12 +86,7 @@ func (c *Config) SaveConfig(){
 func makeConfPath() string {
 	var configPath = ".gohost/conf/config.yaml"
 
-	userPath, err := os.UserHomeDir()
-	if err != nil {
-		log.Printf("get user home dir error: %v", err)
-	} else {
-		configPath = path.Join(userPath, configPath)
-	}
+	
 	os.MkdirAll(path.Dir(configPath), os.ModeDir|os.ModePerm)
 	return configPath
 }

@@ -1,8 +1,8 @@
 package test
 
 import (
-	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"testing"
@@ -34,6 +34,6 @@ func TestMixedServerProxyHttps(t *testing.T) {
 	}
 	s := string(b) 
 	s = s[len(s)-100:]
-	fmt.Println(s)
+	log.Println(s)
 	
 }

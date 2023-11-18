@@ -59,7 +59,7 @@ func (s *MixedServer) proxy() {
 	client := &http.Client{
 		Transport:&http.Transport{TLSClientConfig: &config},
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			fmt.Printf("重定向: %s %s %s\n", req.Method, req.Host, req.URL)
+			log.Printf("重定向: %s %s %s\n", req.Method, req.Host, req.URL)
 			return http.ErrUseLastResponse
 		},
 	}
@@ -68,7 +68,7 @@ func (s *MixedServer) proxy() {
 		p := c
 		go func() {
 			defer func(Conn net.Conn, Host string) {
-				fmt.Printf("关闭代理连接: %s %s\n", Conn.RemoteAddr().String(), Host)
+				log.Printf("关闭代理连接: %s %s\n", Conn.RemoteAddr().String(), Host)
 				err := Conn.Close()
 				if err != nil {
 					log.Printf("关闭连接失败: %s", err.Error())
@@ -80,10 +80,10 @@ func (s *MixedServer) proxy() {
 				req, err := http.ReadRequest(reader.Reader())
 				if err != nil {
 					if err == io.EOF {
-						fmt.Printf("read request EOF")
+						log.Printf("read request EOF")
 						return
 					}
-					fmt.Printf("read request error: %s", err.Error())
+					log.Printf("read request error: %s", err.Error())
 					return
 				}
 				log.Printf("处理请求: %s %s %s", req.Method, req.URL, req.Proto)
@@ -105,7 +105,7 @@ func (s *MixedServer) proxy() {
 
 				resp, err := client.Do(req)
 				if err != nil {
-					fmt.Printf("远程请求失败%s\n",  err)
+					log.Printf("远程请求失败%s\n",  err)
 					//todo : return http bad gateway
 					return
 				}
@@ -121,7 +121,7 @@ func (s *MixedServer) proxy() {
 				resp.Close = !p.KeepAlive
 				// 不需要resp.Body.Close()，因为resp.Write()会自动关闭；
 				if err := resp.Write(p.Conn); err != nil {
-					fmt.Printf("resp reply error: %v, %s", resp, err)
+					log.Printf("resp reply error: %v, %s", resp, err)
 					return
 				}
 				log.Printf("完成处理请求: %s %s %s", req.Method, req.URL, req.Proto)
@@ -164,7 +164,7 @@ func  (s *MixedServer) handleConnWithProtocol(conn net.Conn) {
 		})
 		err = tlsConn.Handshake()
 		if err != nil {
-			fmt.Printf("tls handshake error: %s", err.Error())
+			log.Printf("tls handshake error: %s", err.Error())
 			return
 		}
 
